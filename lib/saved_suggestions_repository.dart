@@ -1,17 +1,3 @@
-/*
-{uid: saved:{}, avatar: <file>}
-Class suggestions : auth consumer {
-_saved // set
-add()
-remove()
-getall() // all saved
-isSaved(name) //returns is contained
-_sync()
-// auth > !auth : removes saved
-// !auth > auth : adds local saved
-}
-* */
-
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hello_me/auth_repository.dart';
@@ -27,7 +13,6 @@ class SavedSuggestionsRepository with ChangeNotifier {
   SavedSuggestionsRepository(AuthRepository authRepo)
       : _firestore = FirebaseFirestore.instance,
         _authRepo = authRepo {
-    // _onAuthStateChanged(_authRepo.user);
     updateAuth(_authRepo);
   }
   
@@ -36,7 +21,7 @@ class SavedSuggestionsRepository with ChangeNotifier {
   }
   
   void addAll(List<String> suggestions) async {
-    if (_authRepo.isAuthenticated) {
+    if (_authRepo.isAuthenticated && _authRepo.user != null) {
       _firestore
           .collection('users')
           .doc(_authRepo.user?.uid) // assumed inited because isAuthenticated
@@ -53,7 +38,7 @@ class SavedSuggestionsRepository with ChangeNotifier {
   }
 
   void remove(String suggestion) async {
-    if (_authRepo.isAuthenticated) {
+    if (_authRepo.isAuthenticated && _authRepo.user != null) {
       _firestore
           .collection('users')
           .doc(_authRepo.user?.uid)
@@ -94,7 +79,6 @@ class SavedSuggestionsRepository with ChangeNotifier {
 
   SavedSuggestionsRepository updateAuth(AuthRepository auth) {
     _authRepo = auth;
-    // _onAuthStateChanged(_authRepo.user);
     if (_authRepo.isAuthenticated){
       addAll(_saved.toList());
       _saved.clear();

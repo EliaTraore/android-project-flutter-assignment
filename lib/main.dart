@@ -111,40 +111,33 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
-Text rowText(String text) => Text(text,
-    style: TextStyle(
-        fontSize: 18)); //todo: better solution for style encapsulation
+//used by SuggestionsScreen and SavedSuggestionScreen
+Text rowText(String text) => Text(text, style: TextStyle(fontSize: 18));
 
 class SavedSuggestionsScreen extends StatelessWidget {
-  Widget _build(BuildContext context, List<String> allSaved, SavedSuggestionsRepository savedRepo){
+  Widget _build(BuildContext context, List<String> allSaved,
+      SavedSuggestionsRepository savedRepo) {
     final tiles = allSaved.map((String suggestion) => ListTile(
           title: rowText(suggestion),
           trailing:
               Icon(Icons.delete_outline, color: Theme.of(context).primaryColor),
           onTap: () => savedRepo.remove(suggestion),
         ));
-    final divided =
-        ListTile.divideTiles(context: context, tiles: tiles).toList();
 
     return Scaffold(
         appBar: AppBar(title: Text('Saved Suggestions')),
-        body: ListView(children: divided));
+        body: ListView(
+            children:
+                ListTile.divideTiles(context: context, tiles: tiles).toList()));
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<SavedSuggestionsRepository>(
         builder: (context, saved, _) => FutureBuilder(
-          future: saved.getAll(),
-            builder: (context, AsyncSnapshot<Set<String>> snapshot) {
-              if (snapshot.hasError) {
-                return _build(context, [], saved);
-              }
-              if (snapshot.connectionState == ConnectionState.done) {
-                return _build(context, snapshot.data?.toList() ?? [], saved); //todo
-              }
-              return Center(child: CircularProgressIndicator());
-            }));
+            future: saved.getAll(),
+            builder: (context, AsyncSnapshot<Set<String>> snapshot) =>
+                _build(context, snapshot.data?.toList() ?? [], saved)));
   }
 }
 
@@ -156,8 +149,8 @@ class AllSuggestionsScreen extends StatefulWidget {
 class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
   final _suggestions = <String>[];
 
-  Future<Widget> _rowBuilder(
-      BuildContext context, int row, SavedSuggestionsRepository savedRepo) async{
+  Future<Widget> _rowBuilder(BuildContext context, int row,
+      SavedSuggestionsRepository savedRepo) async {
     if (row.isOdd) {
       return Divider();
     }
@@ -169,7 +162,7 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
     }
 
     final suggestion = _suggestions[index];
-    bool alreadySaved = await savedRepo.isSaved(suggestion);//todo
+    bool alreadySaved = await savedRepo.isSaved(suggestion);
     return ListTile(
         title: rowText(suggestion),
         trailing: Icon(alreadySaved ? Icons.favorite : Icons.favorite_border,
@@ -193,7 +186,6 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (context) => LoginScreen().build(context)))));
 
-
     return Scaffold(
         appBar: AppBar(
           title: Text('Startup Name Generator'),
@@ -202,20 +194,13 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
         body: ListView.builder(
             padding: const EdgeInsets.all(16),
             itemBuilder: (context, row) => FutureBuilder(
-                future: _rowBuilder(context, row, savedRepo), //todo: future only the data?
+                future: _rowBuilder(context, row, savedRepo),
                 builder: (context, AsyncSnapshot<Widget> snapshot) {
-                  final fillerWidget = (text) => ListTile(
-                      title: rowText(text),
-                      trailing: Icon(Icons.favorite_border));
-                  if (snapshot.hasError) {
-                    return Text(snapshot.error.toString());
-                  }
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    return snapshot.data ?? fillerWidget('error loading :(');
-                  }
-                  return fillerWidget(" ");
-                })
-                ));
+                  return snapshot.data ??
+                      ListTile(
+                          title: rowText('loading...'),
+                          trailing: Icon(Icons.favorite_border));
+                })));
   }
 
   @override
