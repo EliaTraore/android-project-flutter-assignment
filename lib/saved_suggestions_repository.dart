@@ -12,25 +12,48 @@ _sync()
 }
 * */
 
+import 'dart:developer';
+
 import 'package:hello_me/auth_repository.dart';
 import 'package:flutter/foundation.dart';
 
 
-class SavedSuggestions with ChangeNotifier {
-  Set _saved = <String>{};
+class SavedSuggestionsRepository with ChangeNotifier {
+  final _saved = <String>{};
   AuthRepository _authRepo;
 
-  SavedSuggestions(this._authRepo);
+  SavedSuggestionsRepository(this._authRepo);
 
-  void add(String suggestion){}
-  // void remove(String suggestion){}
-  List<String> getAll(){
-    return [];
+  void add(String suggestion){
+    _saved.add(suggestion);
+    notifyListeners();
+
   }
-  // void isSaved(String suggestion){}
+
+  void remove(String suggestion){
+    _saved.remove(suggestion);
+    notifyListeners();
+  }
+
+  void toggleSelection(String suggestion){
+    if (isSaved(suggestion)) {
+      remove(suggestion);
+    } else {
+      add(suggestion);
+    }
+  }
+
+  Set<String> getAll(){
+    return _saved;
+  }
+  bool isSaved(String suggestion){
+    return _saved.contains(suggestion);
+  }
   // void _syncWithCloud(){}
 
-  SavedSuggestions updateAuth(AuthRepository auth){
+  SavedSuggestionsRepository updateAuth(AuthRepository auth){
+    // notifyListeners();
+
     return this;
   }
 }

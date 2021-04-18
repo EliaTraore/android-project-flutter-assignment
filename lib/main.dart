@@ -100,16 +100,15 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
-Text RowText(String text) => Text(text, style: TextStyle(fontSize: 18));
+Text RowText(String text) => Text(text, style: TextStyle(fontSize: 18)); //todo: better solution for style encapsulation
 
 class SavedSuggestionsScreen extends StatelessWidget {
-  Widget _build(BuildContext context, SavedSuggestions saved) {
-    final tiles = saved.getAll().map((String suggestion) => ListTile(
+  Widget _build(BuildContext context, SavedSuggestionsRepository savedRepo) {
+    final tiles = savedRepo.getAll().map((String suggestion) => ListTile(
           title: RowText(suggestion),
           trailing:
               Icon(Icons.delete_outline, color: Theme.of(context).primaryColor),
-          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Deletion is not implemented yet"))),
+          onTap: () => savedRepo.remove(suggestion),
         ));
     final divided =
         ListTile.divideTiles(context: context, tiles: tiles).toList();
@@ -121,16 +120,16 @@ class SavedSuggestionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    //todo: is there a simpler provider?
+    //todo: is there a simpler provider? look for provider in route problem
     return ChangeNotifierProvider(
       create: (_) => AuthRepository.instance(),
       child: Consumer<AuthRepository>(builder: (context, auth, _) {
-        return ChangeNotifierProxyProvider<AuthRepository, SavedSuggestions>(
-          create: (_) => SavedSuggestions(
+        return ChangeNotifierProxyProvider<AuthRepository, SavedSuggestionsRepository>(
+          create: (_) => SavedSuggestionsRepository(
               Provider.of<AuthRepository>(context, listen: false)),
           update: (_, currAuth, currSaved) =>
-          currSaved?.updateAuth(currAuth) ?? SavedSuggestions(currAuth),
-          child: Consumer<SavedSuggestions>(
+          currSaved?.updateAuth(currAuth) ?? SavedSuggestionsRepository(currAuth),
+          child: Consumer<SavedSuggestionsRepository>(
               builder: (context, saved, _) => _build(context, saved)),
         );
       }),
@@ -147,7 +146,7 @@ class AllSuggestionsScreen extends StatefulWidget {
 class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
   final _suggestions = <String>[];
 
-  Widget _rowBuilder(BuildContext context, int row) {
+  Widget _rowBuilder(BuildContext context, int row, SavedSuggestionsRepository savedRepo) {
     if (row.isOdd) {
       return Divider();
     }
@@ -158,21 +157,18 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
           .addAll(generateWordPairs().take(10).map((e) => e.asPascalCase));
     }
 
-    // return _buildRow(_suggestions[index]);
     final suggestion = _suggestions[index];
-    final alreadySaved = false; //_saved.contains(pair);
+    final alreadySaved = savedRepo.isSaved(suggestion);
     return ListTile(
       title: RowText(suggestion),
       trailing: Icon(alreadySaved ? Icons.favorite : Icons.favorite_border,
           color: alreadySaved ? Colors.red : null),
-      onTap: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content:
-              Text("addition is not implemented yet"))), //todo: used provided
+      onTap: () => savedRepo.toggleSelection(suggestion)
     );
   }
 
   Widget _build(
-      BuildContext context, AuthRepository auth, SavedSuggestions saved) {
+      BuildContext context, AuthRepository auth, SavedSuggestionsRepository saved) {
     var actions = [
       IconButton(
           icon: Icon(Icons.list),
@@ -193,7 +189,8 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
           actions: actions,
         ),
         body: ListView.builder(
-            padding: const EdgeInsets.all(16), itemBuilder: _rowBuilder));
+            padding: const EdgeInsets.all(16),
+            itemBuilder: (context, row)=>_rowBuilder(context, row, saved)));
   }
 
   @override
@@ -201,12 +198,12 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
     return ChangeNotifierProvider(
       create: (_) => AuthRepository.instance(),
       child: Consumer<AuthRepository>(builder: (context, auth, _) {
-        return ChangeNotifierProxyProvider<AuthRepository, SavedSuggestions>(
-          create: (_) => SavedSuggestions(
+        return ChangeNotifierProxyProvider<AuthRepository, SavedSuggestionsRepository>(
+          create: (_) => SavedSuggestionsRepository(
               Provider.of<AuthRepository>(context, listen: false)),
           update: (_, currAuth, currSaved) =>
-              currSaved?.updateAuth(currAuth) ?? SavedSuggestions(currAuth),
-          child: Consumer2<AuthRepository, SavedSuggestions>(
+              currSaved?.updateAuth(currAuth) ?? SavedSuggestionsRepository(currAuth),
+          child: Consumer2<AuthRepository, SavedSuggestionsRepository>(
               builder: (context, auth, saved, _) =>
                   _build(context, auth, saved)),
         );
