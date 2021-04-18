@@ -111,14 +111,14 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
-Text RowText(String text) => Text(text,
+Text rowText(String text) => Text(text,
     style: TextStyle(
         fontSize: 18)); //todo: better solution for style encapsulation
 
 class SavedSuggestionsScreen extends StatelessWidget {
-  Widget _build(BuildContext context, SavedSuggestionsRepository savedRepo) {
-    final tiles = savedRepo.getAll().map((String suggestion) => ListTile(
-          title: RowText(suggestion),
+  Widget _build(BuildContext context, List<String> allSaved, SavedSuggestionsRepository savedRepo){
+    final tiles = allSaved.map((String suggestion) => ListTile(
+          title: rowText(suggestion),
           trailing:
               Icon(Icons.delete_outline, color: Theme.of(context).primaryColor),
           onTap: () => savedRepo.remove(suggestion),
@@ -134,7 +134,17 @@ class SavedSuggestionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<SavedSuggestionsRepository>(
-        builder: (context, saved, _) => _build(context, saved));
+        builder: (context, saved, _) => FutureBuilder(
+          future: saved.getAll(),
+            builder: (context, AsyncSnapshot<Set<String>> snapshot) {
+              if (snapshot.hasError) {
+                return _build(context, [], saved);
+              }
+              if (snapshot.connectionState == ConnectionState.done) {
+                return _build(context, snapshot.data?.toList() ?? [], saved); //todo
+              }
+              return Center(child: CircularProgressIndicator());
+            }));
   }
 }
 
@@ -146,8 +156,8 @@ class AllSuggestionsScreen extends StatefulWidget {
 class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
   final _suggestions = <String>[];
 
-  Widget _rowBuilder(
-      BuildContext context, int row, SavedSuggestionsRepository savedRepo) {
+  Future<Widget> _rowBuilder(
+      BuildContext context, int row, SavedSuggestionsRepository savedRepo) async{
     if (row.isOdd) {
       return Divider();
     }
@@ -159,9 +169,9 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
     }
 
     final suggestion = _suggestions[index];
-    final alreadySaved = savedRepo.isSaved(suggestion);
+    bool alreadySaved = await savedRepo.isSaved(suggestion);//todo
     return ListTile(
-        title: RowText(suggestion),
+        title: rowText(suggestion),
         trailing: Icon(alreadySaved ? Icons.favorite : Icons.favorite_border,
             color: alreadySaved ? Colors.red : null),
         onTap: () => savedRepo.toggleSelection(suggestion));
@@ -183,6 +193,7 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (context) => LoginScreen().build(context)))));
 
+
     return Scaffold(
         appBar: AppBar(
           title: Text('Startup Name Generator'),
@@ -190,8 +201,21 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
         ),
         body: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemBuilder: (context, row) =>
-                _rowBuilder(context, row, savedRepo)));
+            itemBuilder: (context, row) => FutureBuilder(
+                future: _rowBuilder(context, row, savedRepo), //todo: future only the data?
+                builder: (context, AsyncSnapshot<Widget> snapshot) {
+                  final fillerWidget = (text) => ListTile(
+                      title: rowText(text),
+                      trailing: Icon(Icons.favorite_border));
+                  if (snapshot.hasError) {
+                    return Text(snapshot.error.toString());
+                  }
+                  if (snapshot.connectionState == ConnectionState.done) {
+                    return snapshot.data ?? fillerWidget('error loading :(');
+                  }
+                  return fillerWidget(" ");
+                })
+                ));
   }
 
   @override
