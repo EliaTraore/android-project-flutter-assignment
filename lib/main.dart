@@ -121,13 +121,21 @@ class SavedSuggestionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider<AuthRepository, SavedSuggestions>(
-        create: (_) => SavedSuggestions(
-            Provider.of<AuthRepository>(context, listen: false)),
-        update: (_, currAuth, currSaved) =>
-            currSaved?.updateAuth(currAuth) ?? SavedSuggestions(currAuth),
-        child: Consumer<SavedSuggestions>(
-            builder: (context, saved, _) => _build(context, saved)));
+    //todo: is there a simpler provider?
+    return ChangeNotifierProvider(
+      create: (_) => AuthRepository.instance(),
+      child: Consumer<AuthRepository>(builder: (context, auth, _) {
+        return ChangeNotifierProxyProvider<AuthRepository, SavedSuggestions>(
+          create: (_) => SavedSuggestions(
+              Provider.of<AuthRepository>(context, listen: false)),
+          update: (_, currAuth, currSaved) =>
+          currSaved?.updateAuth(currAuth) ?? SavedSuggestions(currAuth),
+          child: Consumer<SavedSuggestions>(
+              builder: (context, saved, _) => _build(context, saved)),
+        );
+      }),
+    );
+
   }
 }
 
