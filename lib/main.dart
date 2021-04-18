@@ -146,7 +146,8 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
 
     final int index = row ~/ 2;
     if (index >= _suggestions.length) {
-      _suggestions.addAll(generateWordPairs().take(10).map((e) => e.asPascalCase));
+      _suggestions
+          .addAll(generateWordPairs().take(10).map((e) => e.asPascalCase));
     }
 
     // return _buildRow(_suggestions[index]);
@@ -189,17 +190,20 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => AuthRepository.instance()),
-          ChangeNotifierProxyProvider<AuthRepository, SavedSuggestions>(
-              create: (_) => SavedSuggestions(
-                  Provider.of<AuthRepository>(context, listen: false)),
-              update: (_, currAuth, currSaved) =>
-                  currSaved?.updateAuth(currAuth) ?? SavedSuggestions(currAuth))
-        ],
-        child: Consumer2<AuthRepository, SavedSuggestions>(
-            builder: (context, auth, saved, _) =>
-                _build(context, auth, saved)));
+    return ChangeNotifierProvider(
+      create: (_) => AuthRepository.instance(),
+      child: Consumer<AuthRepository>(builder: (context, auth, _) {
+        return ChangeNotifierProxyProvider<AuthRepository, SavedSuggestions>(
+          create: (_) => SavedSuggestions(
+              Provider.of<AuthRepository>(context, listen: false)),
+          update: (_, currAuth, currSaved) =>
+              currSaved?.updateAuth(currAuth) ?? SavedSuggestions(currAuth),
+          child: Consumer2<AuthRepository, SavedSuggestions>(
+              builder: (context, auth, saved, _) =>
+                  _build(context, auth, saved)),
+        );
+      }),
+    );
+
   }
 }
