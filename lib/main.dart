@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:hello_me/saved_suggestions_repository.dart';
 import 'package:provider/provider.dart';
 import 'package:english_words/english_words.dart';
 import 'package:hello_me/auth_repository.dart';
@@ -41,68 +42,8 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class RandomWords extends StatefulWidget {
-  @override
-  _RandomWordsState createState() => _RandomWordsState();
-}
-
-class _RandomWordsState extends State<RandomWords> {
-  final _suggestions = <WordPair>[];
-  final _saved = <WordPair>{};
-  final _biggerFont = const TextStyle(fontSize: 18);
-
-  //-------------- screens creation functions --------------------------------
-  Widget _buildSuggestions() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemBuilder: (BuildContext _context, int i) {
-        if (i.isOdd) {
-          return Divider();
-        }
-        final int index = i ~/ 2;
-        if (index >= _suggestions.length) {
-          _suggestions.addAll(generateWordPairs().take(10));
-        }
-        return _buildRow(_suggestions[index]);
-      },
-    );
-  }
-
-  Widget _buildRow(WordPair pair) {
-    final alreadySaved = _saved.contains(pair);
-    return ListTile(
-      title: Text(pair.asPascalCase, style: _biggerFont),
-      trailing: Icon(alreadySaved ? Icons.favorite : Icons.favorite_border,
-          color: alreadySaved ? Colors.red : null),
-      onTap: () {
-        setState(() {
-          if (alreadySaved) {
-            _saved.remove(pair);
-          } else {
-            _saved.add(pair);
-          }
-        });
-      },
-    );
-  }
-
-  Widget _buildSavedSuggestionsScreen(
-      BuildContext context, AuthRepository auth) {
-    final tiles = _saved.map((WordPair pair) => ListTile(
-          title: Text(pair.asPascalCase, style: _biggerFont),
-          trailing:
-              Icon(Icons.delete_outline, color: Theme.of(context).primaryColor),
-          onTap: () => _showSnackBar(text: "Deletion is not implemented yet"),
-        ));
-    final divided =
-        ListTile.divideTiles(context: context, tiles: tiles).toList();
-
-    return Scaffold(
-        appBar: AppBar(title: Text('Saved Suggestions')),
-        body: ListView(children: divided));
-  }
-
-  Widget _buildLoginScreen(BuildContext context, AuthRepository auth) {
+class LoginScreen extends StatelessWidget {
+  Widget _build(BuildContext context, AuthRepository auth) {
     final TextEditingController emailController = TextEditingController();
     final TextEditingController pwdController = TextEditingController();
 
@@ -117,7 +58,7 @@ class _RandomWordsState extends State<RandomWords> {
         decoration: InputDecoration(labelText: "Password"),
         controller: pwdController,
       ),
-      auth.status == Status.Authenticating
+      auth.isAuthenticating
           ? LinearProgressIndicator()
           : ElevatedButton(
               child: Text("Log In"),
@@ -127,8 +68,9 @@ class _RandomWordsState extends State<RandomWords> {
                 if (success) {
                   Navigator.of(context).pop();
                 } else {
-                  _showSnackBar(
-                      text: "There was an error logging into the app");
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content:
+                          Text("There was an error logging into the app")));
                 }
               },
               style: ButtonStyle(
@@ -149,48 +91,115 @@ class _RandomWordsState extends State<RandomWords> {
                 .toList()));
   }
 
-  Widget _buildMainScreen(BuildContext context, AuthRepository auth) {
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+        create: (_) => AuthRepository.instance(),
+        child: Consumer<AuthRepository>(
+            builder: (context, auth, _) => _build(context, auth)));
+  }
+}
+
+Text RowText(String text) => Text(text, style: TextStyle(fontSize: 18));
+
+class SavedSuggestionsScreen extends StatelessWidget {
+  Widget _build(BuildContext context, SavedSuggestions saved) {
+    final tiles = saved.getAll().map((String suggestion) => ListTile(
+          title: RowText(suggestion),
+          trailing:
+              Icon(Icons.delete_outline, color: Theme.of(context).primaryColor),
+          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Deletion is not implemented yet"))),
+        ));
+    final divided =
+        ListTile.divideTiles(context: context, tiles: tiles).toList();
+
+    return Scaffold(
+        appBar: AppBar(title: Text('Saved Suggestions')),
+        body: ListView(children: divided));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProxyProvider<AuthRepository, SavedSuggestions>(
+        create: (_) => SavedSuggestions(
+            Provider.of<AuthRepository>(context, listen: false)),
+        update: (_, currAuth, currSaved) =>
+            currSaved?.updateAuth(currAuth) ?? SavedSuggestions(currAuth),
+        child: Consumer<SavedSuggestions>(
+            builder: (context, saved, _) => _build(context, saved)));
+  }
+}
+
+class RandomWords extends StatefulWidget {
+  @override
+  _RandomWordsState createState() => _RandomWordsState();
+}
+
+class _RandomWordsState extends State<RandomWords> {
+  final _suggestions = <String>[];
+
+  Widget _rowBuilder(BuildContext context, int row) {
+    if (row.isOdd) {
+      return Divider();
+    }
+
+    final int index = row ~/ 2;
+    if (index >= _suggestions.length) {
+      _suggestions.addAll(generateWordPairs().take(10).map((e) => e.asPascalCase));
+    }
+
+    // return _buildRow(_suggestions[index]);
+    final suggestion = _suggestions[index];
+    final alreadySaved = false; //_saved.contains(pair);
+    return ListTile(
+      title: RowText(suggestion),
+      trailing: Icon(alreadySaved ? Icons.favorite : Icons.favorite_border,
+          color: alreadySaved ? Colors.red : null),
+      onTap: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:
+              Text("addition is not implemented yet"))), //todo: used provided
+    );
+  }
+
+  Widget _build(
+      BuildContext context, AuthRepository auth, SavedSuggestions saved) {
     var actions = [
       IconButton(
           icon: Icon(Icons.list),
-          onPressed: () =>
-              _pushScreen(widgetBuilder: _buildSavedSuggestionsScreen))
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (context) => SavedSuggestionsScreen().build(context))))
     ];
-    actions.add(auth.status == Status.Authenticated
+
+    actions.add(auth.isAuthenticated
         ? IconButton(icon: Icon(Icons.exit_to_app), onPressed: auth.signOut)
         : IconButton(
             icon: Icon(Icons.login),
-            onPressed: () => _pushScreen(widgetBuilder: _buildLoginScreen)));
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (context) => LoginScreen().build(context)))));
 
     return Scaffold(
         appBar: AppBar(
           title: Text('Startup Name Generator'),
           actions: actions,
         ),
-        body: _buildSuggestions());
+        body: ListView.builder(
+            padding: const EdgeInsets.all(16), itemBuilder: _rowBuilder));
   }
 
-  //-------------- general usage ---------------------------------------------
-  void _pushScreen({required Function widgetBuilder}) {
-    // in order to have the auth provided in route, we need the provider widget
-    //  to be inside the route widget
-    Navigator.of(context).push(MaterialPageRoute(
-        builder: (BuildContext context) => ChangeNotifierProvider(
-            create: (_) => AuthRepository.instance(),
-            child: Consumer<AuthRepository>(
-                builder: (context, auth, _) => widgetBuilder(context, auth)))));
-  }
-
-  void _showSnackBar({required String text}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
-  }
-
-  //--------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-        create: (_) => AuthRepository.instance(),
-        child: Consumer<AuthRepository>(
-            builder: (context, auth, _) => _buildMainScreen(context, auth)));
+    return MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthRepository.instance()),
+          ChangeNotifierProxyProvider<AuthRepository, SavedSuggestions>(
+              create: (_) => SavedSuggestions(
+                  Provider.of<AuthRepository>(context, listen: false)),
+              update: (_, currAuth, currSaved) =>
+                  currSaved?.updateAuth(currAuth) ?? SavedSuggestions(currAuth))
+        ],
+        child: Consumer2<AuthRepository, SavedSuggestions>(
+            builder: (context, auth, saved, _) =>
+                _build(context, auth, saved)));
   }
 }
