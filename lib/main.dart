@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:english_words/english_words.dart';
 import 'package:hello_me/auth_repository.dart';
 
@@ -49,8 +50,6 @@ class _RandomWordsState extends State<RandomWords> {
   final _suggestions = <WordPair>[];
   final _saved = <WordPair>{};
   final _biggerFont = const TextStyle(fontSize: 18);
-  final _status = 0;
-
 
   //-------------- screens creation functions --------------------------------
   Widget _buildSuggestions() {
@@ -87,12 +86,13 @@ class _RandomWordsState extends State<RandomWords> {
     );
   }
 
-  Widget _buildSavedSuggestionsScreen(BuildContext context) {
+  Widget _buildSavedSuggestionsScreen(
+      BuildContext context, AuthRepository auth) {
     final tiles = _saved.map((WordPair pair) => ListTile(
           title: Text(pair.asPascalCase, style: _biggerFont),
           trailing:
               Icon(Icons.delete_outline, color: Theme.of(context).primaryColor),
-          onTap: () => _unsupportedSnackBar(action: "Deletion"),
+          onTap: () => _showSnackBar(text: "Deletion is not implemented yet"),
         ));
     final divided =
         ListTile.divideTiles(context: context, tiles: tiles).toList();
@@ -102,28 +102,9 @@ class _RandomWordsState extends State<RandomWords> {
         body: ListView(children: divided));
   }
 
-  Widget _buildLoginScreen(BuildContext _) {
+  Widget _buildLoginScreen(BuildContext context, AuthRepository auth) {
     final TextEditingController emailController = TextEditingController();
     final TextEditingController pwdController = TextEditingController();
-
-    //temp code
-    final statusQueue = [Status.Uninitialized,
-      Status.Authenticating, Status.Unauthenticated,
-      Status.Authenticating, Status.Authenticated];
-    //temp code end
-
-    Widget getLoginButton() {
-      return ElevatedButton(
-          child: Text("Log In"),
-          onPressed: () =>
-              _unsupportedSnackBar(action: 'Login #${emailController.text}#'),
-          style: ButtonStyle(
-              shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                  RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16))),
-              backgroundColor: MaterialStateProperty.all<Color>(
-                  Theme.of(context).primaryColor)));
-    }
 
     final children = [
       Text("Welcome to Startup Names Generator, please log in below",
@@ -136,16 +117,26 @@ class _RandomWordsState extends State<RandomWords> {
         decoration: InputDecoration(labelText: "Password"),
         controller: pwdController,
       ),
-      ElevatedButton(
-          child: Text("Log In"),
-          onPressed: () =>
-              _unsupportedSnackBar(action: 'Login #${emailController.text}#'),
-          style: ButtonStyle(
-              shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                  RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16))),
-              backgroundColor: MaterialStateProperty.all<Color>(
-                  Theme.of(context).primaryColor)))
+      auth.status == Status.Authenticating
+          ? LinearProgressIndicator()
+          : ElevatedButton(
+              child: Text("Log In"),
+              onPressed: () async {
+                final success =
+                    await auth.signIn(emailController.text, pwdController.text);
+                if (success) {
+                  Navigator.of(context).pop();
+                } else {
+                  _showSnackBar(
+                      text: "There was an error logging into the app");
+                }
+              },
+              style: ButtonStyle(
+                  shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                      RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16))),
+                  backgroundColor: MaterialStateProperty.all<Color>(
+                      Theme.of(context).primaryColor)))
     ];
 
     return Scaffold(
@@ -158,33 +149,48 @@ class _RandomWordsState extends State<RandomWords> {
                 .toList()));
   }
 
-  //-------------- general usage ---------------------------------------------
-  void _pushScreen({required Function widgetBuilder}) {
-    Navigator.of(context).push(MaterialPageRoute(
-        builder: (BuildContext context) => widgetBuilder(context)));
+  Widget _buildMainScreen(BuildContext context, AuthRepository auth) {
+    var actions = [
+      IconButton(
+          icon: Icon(Icons.list),
+          onPressed: () =>
+              _pushScreen(widgetBuilder: _buildSavedSuggestionsScreen))
+    ];
+    actions.add(auth.status == Status.Authenticated
+        ? IconButton(icon: Icon(Icons.exit_to_app), onPressed: auth.signOut)
+        : IconButton(
+            icon: Icon(Icons.login),
+            onPressed: () => _pushScreen(widgetBuilder: _buildLoginScreen)));
+
+    return Scaffold(
+        appBar: AppBar(
+          title: Text('Startup Name Generator'),
+          actions: actions,
+        ),
+        body: _buildSuggestions());
   }
 
-  void _unsupportedSnackBar({required String action}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(action + " is not implemented yet")));
+  //-------------- general usage ---------------------------------------------
+  void _pushScreen({required Function widgetBuilder}) {
+    // in order to have the auth provided in route, we need the provider widget
+    //  to be inside the route widget
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (BuildContext context) => ChangeNotifierProvider(
+            create: (_) => AuthRepository.instance(),
+            child: Consumer<AuthRepository>(
+                builder: (context, auth, _) => widgetBuilder(context, auth)))));
+  }
+
+  void _showSnackBar({required String text}) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
   //--------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: Text('Startup Name Generator'),
-          actions: [
-            IconButton(
-                icon: Icon(Icons.list),
-                onPressed: () =>
-                    _pushScreen(widgetBuilder: _buildSavedSuggestionsScreen)),
-            IconButton(
-                icon: Icon(Icons.login),
-                onPressed: () => _pushScreen(widgetBuilder: _buildLoginScreen))
-          ],
-        ),
-        body: _buildSuggestions());
+    return ChangeNotifierProvider(
+        create: (_) => AuthRepository.instance(),
+        child: Consumer<AuthRepository>(
+            builder: (context, auth, _) => _buildMainScreen(context, auth)));
   }
 }
