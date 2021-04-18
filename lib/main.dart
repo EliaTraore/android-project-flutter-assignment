@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
         title: 'Welcome to Flutter',
         theme: ThemeData(primaryColor: Colors.red),
-        home: RandomWords());
+        home: AllSuggestionsScreen());
   }
 }
 
@@ -131,12 +131,12 @@ class SavedSuggestionsScreen extends StatelessWidget {
   }
 }
 
-class RandomWords extends StatefulWidget {
+class AllSuggestionsScreen extends StatefulWidget {
   @override
-  _RandomWordsState createState() => _RandomWordsState();
+  _AllSuggestionsScreenState createState() => _AllSuggestionsScreenState();
 }
 
-class _RandomWordsState extends State<RandomWords> {
+class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
   final _suggestions = <String>[];
 
   Widget _rowBuilder(BuildContext context, int row) {
