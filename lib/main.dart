@@ -35,10 +35,23 @@ class App extends StatelessWidget {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        title: 'Welcome to Flutter',
-        theme: ThemeData(primaryColor: Colors.red),
-        home: AllSuggestionsScreen());
+    return ChangeNotifierProvider(
+      create: (_) => AuthRepository.instance(),
+      child: Consumer<AuthRepository>(builder: (context, auth, _) {
+        return ChangeNotifierProxyProvider<AuthRepository,
+            SavedSuggestionsRepository>(
+          create: (_) => SavedSuggestionsRepository(
+              Provider.of<AuthRepository>(context, listen: false)),
+          update: (_, currAuth, currSaved) =>
+              currSaved?.updateAuth(currAuth) ??
+              SavedSuggestionsRepository(currAuth),
+          child: MaterialApp(
+              title: 'Welcome to Flutter',
+              theme: ThemeData(primaryColor: Colors.red),
+              home: AllSuggestionsScreen()),
+        );
+      }),
+    );
   }
 }
 
@@ -93,14 +106,14 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-        create: (_) => AuthRepository.instance(),
-        child: Consumer<AuthRepository>(
-            builder: (context, auth, _) => _build(context, auth)));
+    return Consumer<AuthRepository>(
+        builder: (context, auth, _) => _build(context, auth));
   }
 }
 
-Text RowText(String text) => Text(text, style: TextStyle(fontSize: 18)); //todo: better solution for style encapsulation
+Text RowText(String text) => Text(text,
+    style: TextStyle(
+        fontSize: 18)); //todo: better solution for style encapsulation
 
 class SavedSuggestionsScreen extends StatelessWidget {
   Widget _build(BuildContext context, SavedSuggestionsRepository savedRepo) {
@@ -120,21 +133,8 @@ class SavedSuggestionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    //todo: is there a simpler provider? look for provider in route problem
-    return ChangeNotifierProvider(
-      create: (_) => AuthRepository.instance(),
-      child: Consumer<AuthRepository>(builder: (context, auth, _) {
-        return ChangeNotifierProxyProvider<AuthRepository, SavedSuggestionsRepository>(
-          create: (_) => SavedSuggestionsRepository(
-              Provider.of<AuthRepository>(context, listen: false)),
-          update: (_, currAuth, currSaved) =>
-          currSaved?.updateAuth(currAuth) ?? SavedSuggestionsRepository(currAuth),
-          child: Consumer<SavedSuggestionsRepository>(
-              builder: (context, saved, _) => _build(context, saved)),
-        );
-      }),
-    );
-
+    return Consumer<SavedSuggestionsRepository>(
+        builder: (context, saved, _) => _build(context, saved));
   }
 }
 
@@ -146,7 +146,8 @@ class AllSuggestionsScreen extends StatefulWidget {
 class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
   final _suggestions = <String>[];
 
-  Widget _rowBuilder(BuildContext context, int row, SavedSuggestionsRepository savedRepo) {
+  Widget _rowBuilder(
+      BuildContext context, int row, SavedSuggestionsRepository savedRepo) {
     if (row.isOdd) {
       return Divider();
     }
@@ -160,15 +161,14 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
     final suggestion = _suggestions[index];
     final alreadySaved = savedRepo.isSaved(suggestion);
     return ListTile(
-      title: RowText(suggestion),
-      trailing: Icon(alreadySaved ? Icons.favorite : Icons.favorite_border,
-          color: alreadySaved ? Colors.red : null),
-      onTap: () => savedRepo.toggleSelection(suggestion)
-    );
+        title: RowText(suggestion),
+        trailing: Icon(alreadySaved ? Icons.favorite : Icons.favorite_border,
+            color: alreadySaved ? Colors.red : null),
+        onTap: () => savedRepo.toggleSelection(suggestion));
   }
 
-  Widget _build(
-      BuildContext context, AuthRepository auth, SavedSuggestionsRepository saved) {
+  Widget _build(BuildContext context, AuthRepository auth,
+      SavedSuggestionsRepository savedRepo) {
     var actions = [
       IconButton(
           icon: Icon(Icons.list),
@@ -190,25 +190,13 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
         ),
         body: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemBuilder: (context, row)=>_rowBuilder(context, row, saved)));
+            itemBuilder: (context, row) =>
+                _rowBuilder(context, row, savedRepo)));
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AuthRepository.instance(),
-      child: Consumer<AuthRepository>(builder: (context, auth, _) {
-        return ChangeNotifierProxyProvider<AuthRepository, SavedSuggestionsRepository>(
-          create: (_) => SavedSuggestionsRepository(
-              Provider.of<AuthRepository>(context, listen: false)),
-          update: (_, currAuth, currSaved) =>
-              currSaved?.updateAuth(currAuth) ?? SavedSuggestionsRepository(currAuth),
-          child: Consumer2<AuthRepository, SavedSuggestionsRepository>(
-              builder: (context, auth, saved, _) =>
-                  _build(context, auth, saved)),
-        );
-      }),
-    );
-
+    return Consumer2<AuthRepository, SavedSuggestionsRepository>(
+        builder: (context, auth, saved, _) => _build(context, auth, saved));
   }
 }

@@ -17,25 +17,25 @@ import 'dart:developer';
 import 'package:hello_me/auth_repository.dart';
 import 'package:flutter/foundation.dart';
 
-
 class SavedSuggestionsRepository with ChangeNotifier {
   final _saved = <String>{};
   AuthRepository _authRepo;
 
-  SavedSuggestionsRepository(this._authRepo);
-
-  void add(String suggestion){
-    _saved.add(suggestion);
-    notifyListeners();
-
+  SavedSuggestionsRepository(AuthRepository authRepo) : _authRepo = authRepo {
+    log('created');
   }
 
-  void remove(String suggestion){
+  void add(String suggestion) {
+    _saved.add(suggestion);
+    notifyListeners();
+  }
+
+  void remove(String suggestion) {
     _saved.remove(suggestion);
     notifyListeners();
   }
 
-  void toggleSelection(String suggestion){
+  void toggleSelection(String suggestion) {
     if (isSaved(suggestion)) {
       remove(suggestion);
     } else {
@@ -43,16 +43,17 @@ class SavedSuggestionsRepository with ChangeNotifier {
     }
   }
 
-  Set<String> getAll(){
+  Set<String> getAll() {
     return _saved;
   }
-  bool isSaved(String suggestion){
+
+  bool isSaved(String suggestion) {
     return _saved.contains(suggestion);
   }
   // void _syncWithCloud(){}
 
-  SavedSuggestionsRepository updateAuth(AuthRepository auth){
-    // notifyListeners();
+  SavedSuggestionsRepository updateAuth(AuthRepository auth) {
+    notifyListeners();
 
     return this;
   }
