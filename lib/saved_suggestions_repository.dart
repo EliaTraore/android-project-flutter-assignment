@@ -28,7 +28,6 @@ class SavedSuggestionsRepository with ChangeNotifier {
           .update({
             _savedDBField: FieldValue.arrayUnion(suggestions)
           })
-          .then((value) => log('success adding $suggestions'))
           .catchError((err) => log('while adding $suggestions got error $err'));
     } else {
       _saved.addAll(suggestions);
@@ -45,7 +44,6 @@ class SavedSuggestionsRepository with ChangeNotifier {
           .update({
             _savedDBField: FieldValue.arrayRemove([suggestion])
           })
-          .then((value) => log('success removing $suggestion'))
           .catchError(
               (err) => log('while removing $suggestion got error $err'));
     } else {
