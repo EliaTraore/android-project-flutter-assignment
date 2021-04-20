@@ -1,6 +1,6 @@
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:hello_me/auth_repository.dart';
+import 'package:hello_me/service_repos/auth_repository.dart';
 import 'package:flutter/foundation.dart';
 
 
