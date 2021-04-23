@@ -16,8 +16,8 @@ class AllSuggestionsScreen extends StatefulWidget {
 class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
   final _suggestions = <String>[];
 
-  Future<Widget> _rowBuilder(BuildContext context, int row,
-      SavedSuggestionsRepository savedRepo) async {
+  Widget _rowBuilder(
+      BuildContext context, int row, SavedSuggestionsRepository savedRepo) {
     if (row.isOdd) {
       return Divider();
     }
@@ -29,11 +29,16 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
     }
 
     final suggestion = _suggestions[index];
-    bool alreadySaved = await savedRepo.isSaved(suggestion);
     return ListTile(
         title: rowText(suggestion),
-        trailing: Icon(alreadySaved ? Icons.favorite : Icons.favorite_border,
-            color: alreadySaved ? Colors.red : null),
+        trailing: FutureBuilder(
+            future: savedRepo.isSaved(suggestion),
+            builder: (context, AsyncSnapshot<bool> snapshot) {
+              final alreadySaved = snapshot.data ?? false;
+              return Icon(
+                  alreadySaved ? Icons.favorite : Icons.favorite_border,
+                  color: alreadySaved ? Colors.red : null);
+            }),
         onTap: () => savedRepo.toggleSelection(suggestion));
   }
 
@@ -59,15 +64,9 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
           actions: actions,
         ),
         body: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemBuilder: (context, row) => FutureBuilder(
-                future: _rowBuilder(context, row, savedRepo),
-                builder: (context, AsyncSnapshot<Widget> snapshot) {
-                  return snapshot.data ??
-                      ListTile(
-                          title: rowText('loading...'),
-                          trailing: Icon(Icons.favorite_border));
-                })));
+          padding: const EdgeInsets.all(16),
+          itemBuilder: (context, row) => _rowBuilder(context, row, savedRepo),
+        ));
   }
 
   @override
