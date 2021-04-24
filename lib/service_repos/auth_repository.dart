@@ -12,7 +12,6 @@ class AuthRepository with ChangeNotifier {
     _auth.authStateChanges().listen(_onAuthStateChanged);
     _user = _auth.currentUser;
     _onAuthStateChanged(_user);
-    signOut();
   }
 
   Status get status => _status;
