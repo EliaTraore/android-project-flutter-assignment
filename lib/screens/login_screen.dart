@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hello_me/service_repos/auth_repository.dart';
@@ -21,7 +23,7 @@ class LoginScreen extends StatelessWidget {
       auth.isAuthenticating
           ? LinearProgressIndicator()
           : ElevatedButton(
-              child: Text("Log In"),
+              child: Text("Log in"),
               onPressed: () async {
                 final success =
                     await auth.signIn(emailController.text, pwdController.text);
@@ -33,12 +35,19 @@ class LoginScreen extends StatelessWidget {
                           Text("There was an error logging into the app")));
                 }
               },
-              style: ButtonStyle(
-                  shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                      RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16))),
-                  backgroundColor: MaterialStateProperty.all<Color>(
-                      Theme.of(context).primaryColor)))
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                primary: Theme.of(context).primaryColor,
+              )),
+      ElevatedButton(
+          child: Text("New user? Click to sign up"),
+          onPressed: () => log("tried to sign up"),
+          style: ElevatedButton.styleFrom(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            primary: Colors.teal,
+          ))
     ];
 
     return Scaffold(
