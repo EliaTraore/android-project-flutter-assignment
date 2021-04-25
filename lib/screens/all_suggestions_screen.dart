@@ -124,7 +124,6 @@ class LoggedInBottomSheet extends StatelessWidget {
 
   Widget _build(BuildContext context, AuthRepository auth,
       UserGeneralDataRepository userData) {
-    //todo: on tap, change position of sheet to next position
     if (auth.user == null) {
       return child;
     }
@@ -181,15 +180,19 @@ class LoggedInBottomSheet extends StatelessWidget {
           positionFactor: 0.0,
           snappingDuration: Duration(milliseconds: 500),
           grabbingContentOffset: GrabbingContentOffset.top,
+          snappingCurve: Curves.bounceOut
         ),
         SnappingPosition.factor(
           positionFactor: 0.25,
           snappingDuration: Duration(milliseconds: 500),
+          snappingCurve: Curves.bounceOut
         ),
         SnappingPosition.factor(
           positionFactor: 0.9,
           snappingDuration: Duration(milliseconds: 500),
           grabbingContentOffset: GrabbingContentOffset.bottom,
+          snappingCurve: Curves.easeOut
+
         ),
       ],
     );
