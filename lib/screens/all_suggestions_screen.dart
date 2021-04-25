@@ -20,9 +20,9 @@ class AllSuggestionsScreen extends StatefulWidget {
 
 class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
   final _suggestions = <String>[];
-  SavedSuggestionsRepository? _savedRepo;
 
-  Widget _rowBuilder(BuildContext context, int row) {
+  Widget _rowBuilder(
+      BuildContext context, int row, SavedSuggestionsRepository savedRepo) {
     if (row.isOdd) {
       return Divider();
     }
@@ -37,19 +37,17 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
     return ListTile(
         title: rowText(suggestion),
         trailing: FutureBuilder(
-            future: _savedRepo?.isSaved(suggestion),
+            future: savedRepo.isSaved(suggestion),
             builder: (context, AsyncSnapshot<bool> snapshot) {
               final alreadySaved = snapshot.data ?? false;
               return Icon(alreadySaved ? Icons.favorite : Icons.favorite_border,
                   color: alreadySaved ? Colors.red : null);
             }),
-        onTap: () => _savedRepo?.toggleSelection(suggestion));
+        onTap: () => savedRepo.toggleSelection(suggestion));
   }
 
   Widget _build(BuildContext context, AuthRepository auth,
       SavedSuggestionsRepository savedRepo) {
-    _savedRepo = savedRepo;
-
     var actions = [
       IconButton(
           icon: Icon(Icons.list),
@@ -71,7 +69,9 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
       ),
       body: LoggedInBottomSheet(
         child: ListView.builder(
-            padding: const EdgeInsets.all(16), itemBuilder: _rowBuilder),
+            padding: const EdgeInsets.all(16),
+            itemBuilder: (context, row) =>
+                _rowBuilder(context, row, savedRepo)),
       ),
     );
   }
