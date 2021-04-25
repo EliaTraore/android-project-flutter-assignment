@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:hello_me/service_repos/user_general_db_repository.dart';
 import 'package:provider/provider.dart';
 import 'package:english_words/english_words.dart';
 import 'package:snapping_sheet/snapping_sheet.dart';
@@ -19,9 +20,9 @@ class AllSuggestionsScreen extends StatefulWidget {
 
 class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
   final _suggestions = <String>[];
+  SavedSuggestionsRepository? _savedRepo;
 
-  Widget _rowBuilder(
-      BuildContext context, int row, SavedSuggestionsRepository savedRepo) {
+  Widget _rowBuilder(BuildContext context, int row) {
     if (row.isOdd) {
       return Divider();
     }
@@ -36,19 +37,60 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
     return ListTile(
         title: rowText(suggestion),
         trailing: FutureBuilder(
-            future: savedRepo.isSaved(suggestion),
+            future: _savedRepo?.isSaved(suggestion),
             builder: (context, AsyncSnapshot<bool> snapshot) {
               final alreadySaved = snapshot.data ?? false;
               return Icon(alreadySaved ? Icons.favorite : Icons.favorite_border,
                   color: alreadySaved ? Colors.red : null);
             }),
-        onTap: () => savedRepo.toggleSelection(suggestion));
+        onTap: () => _savedRepo?.toggleSelection(suggestion));
   }
 
-  Widget _bottomSheetBuilder(BuildContext context, AuthRepository auth,
-      {required Widget child}) {
+  Widget _build(BuildContext context, AuthRepository auth,
+      SavedSuggestionsRepository savedRepo) {
+    _savedRepo = savedRepo;
+
+    var actions = [
+      IconButton(
+          icon: Icon(Icons.list),
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (context) => SavedSuggestionsScreen().build(context))))
+    ];
+
+    actions.add(auth.isAuthenticated
+        ? IconButton(icon: Icon(Icons.exit_to_app), onPressed: auth.signOut)
+        : IconButton(
+            icon: Icon(Icons.login),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (context) => LoginScreen().build(context)))));
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Startup Name Generator'),
+        actions: actions,
+      ),
+      body: LoggedInBottomSheet(
+        child: ListView.builder(
+            padding: const EdgeInsets.all(16), itemBuilder: _rowBuilder),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer2<AuthRepository, SavedSuggestionsRepository>(
+        builder: (context, auth, saved, _) => _build(context, auth, saved));
+  }
+}
+
+class LoggedInBottomSheet extends StatelessWidget {
+  LoggedInBottomSheet({required this.child});
+  final Widget child;
+
+  Widget _build(BuildContext context, AuthRepository auth,
+      UserGeneralDataRepository userData) {
     //todo: on tap, change position of sheet to next position
-    if (auth.user == null){
+    if (auth.user == null) {
       return child;
     }
 
@@ -58,8 +100,8 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
       grabbing: Container(
         color: Colors.blueGrey[100],
         child: ListTile(
-          title: Text('Welcome back, $userName',
-              style: TextStyle(fontSize: 14)),
+          title:
+              Text('Welcome back, $userName', style: TextStyle(fontSize: 14)),
           trailing: Icon(Icons.expand_less),
         ),
       ),
@@ -122,38 +164,10 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
     );
   }
 
-  Widget _build(BuildContext context, AuthRepository auth,
-      SavedSuggestionsRepository savedRepo) {
-    var actions = [
-      IconButton(
-          icon: Icon(Icons.list),
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (context) => SavedSuggestionsScreen().build(context))))
-    ];
-
-    actions.add(auth.isAuthenticated
-        ? IconButton(icon: Icon(Icons.exit_to_app), onPressed: auth.signOut)
-        : IconButton(
-            icon: Icon(Icons.login),
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (context) => LoginScreen().build(context)))));
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Startup Name Generator'),
-        actions: actions,
-      ),
-      body: _bottomSheetBuilder(context, auth,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemBuilder: (context, row) => _rowBuilder(context, row, savedRepo),
-          )),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Consumer2<AuthRepository, SavedSuggestionsRepository>(
-        builder: (context, auth, saved, _) => _build(context, auth, saved));
+    return Consumer2<AuthRepository, UserGeneralDataRepository>(
+        builder: (context, auth, userData, _) =>
+            _build(context, auth, userData));
   }
 }
