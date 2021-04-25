@@ -5,6 +5,44 @@ import 'package:provider/provider.dart';
 import 'package:hello_me/service_repos/auth_repository.dart';
 
 class LoginScreen extends StatelessWidget {
+  void _handleSignUp(
+      String email, String pwd, String pwdVerify, AuthRepository auth) {
+    //todo: implement
+    log("tried to sign up");
+  }
+
+  void _showSignUpInterface(BuildContext context, TextEditingController email,
+      TextEditingController pwd, AuthRepository auth) {
+    final TextEditingController verifyController = TextEditingController();
+    showModalBottomSheet(
+        context: context,
+        builder: (context) {
+          return Padding(
+            padding: MediaQuery.of(context).viewInsets,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                ListTile(
+                  title: Text('Please confirm your password below:'),
+                ),
+                Divider(),
+                TextFormField(
+                  decoration: InputDecoration(labelText: "Password"),
+                  controller: verifyController,
+                ),
+                ElevatedButton(
+                    child: Text("Confirm"),
+                    onPressed: () => _handleSignUp(
+                        email.text, pwd.text, verifyController.text, auth),
+                    style: ElevatedButton.styleFrom(
+                      primary: Colors.teal,
+                    ))
+              ],
+            ),
+          );
+        });
+  }
+
   Widget _build(BuildContext context, AuthRepository auth) {
     final TextEditingController emailController = TextEditingController();
     final TextEditingController pwdController = TextEditingController();
@@ -42,7 +80,8 @@ class LoginScreen extends StatelessWidget {
               )),
       ElevatedButton(
           child: Text("New user? Click to sign up"),
-          onPressed: () => log("tried to sign up"),
+          onPressed: () => _showSignUpInterface(
+              context, emailController, pwdController, auth),
           style: ElevatedButton.styleFrom(
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
