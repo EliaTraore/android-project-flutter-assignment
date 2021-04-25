@@ -2,7 +2,8 @@
     package="com.technion.android.hello_me">
    <application
         android:label="hello_me"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:requestLegacyExternalStorage="true">
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"

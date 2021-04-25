@@ -1,15 +1,17 @@
 import 'dart:developer';
-
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:hello_me/service_repos/user_general_db_repository.dart';
 import 'package:provider/provider.dart';
 import 'package:english_words/english_words.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:snapping_sheet/snapping_sheet.dart';
+import 'package:hello_me/service_repos/auth_repository.dart';
+import 'package:hello_me/service_repos/user_general_db_repository.dart';
 import 'package:hello_me/service_repos/saved_suggestions_repository.dart';
 import 'package:hello_me/screens/login_screen.dart';
 import 'package:hello_me/screens/saved_suggestions_screen.dart';
-import 'package:hello_me/service_repos/auth_repository.dart';
 
 import '../style.dart';
 
@@ -87,6 +89,39 @@ class LoggedInBottomSheet extends StatelessWidget {
   LoggedInBottomSheet({required this.child});
   final Widget child;
 
+  Future<void> _setNewAvatar(
+      BuildContext context, UserGeneralDataRepository userData) async {
+    log("tried to change avatar");
+    final pickedFile =
+        await ImagePicker().getImage(source: ImageSource.gallery);
+    if (pickedFile == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("No image selected")));
+    } else {
+      userData.setAvatar(File(pickedFile.path));
+    }
+  }
+
+  Widget getAvatar(BuildContext context, UserGeneralDataRepository userData,
+      String userName) {
+    return FutureBuilder(
+        future: userData.getAvatar(),
+        builder: (context, AsyncSnapshot<Uint8List> snapshot) {
+          if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+            return CircleAvatar(
+              foregroundImage: MemoryImage(snapshot.data!),
+              radius: 40,
+              backgroundColor: Colors.blueGrey[200],
+            );
+          }
+          return CircleAvatar(
+            child: Text(userName[0].toUpperCase()),
+            radius: 40,
+            backgroundColor: Colors.blueGrey[200],
+          );
+        });
+  }
+
   Widget _build(BuildContext context, AuthRepository auth,
       UserGeneralDataRepository userData) {
     //todo: on tap, change position of sheet to next position
@@ -115,11 +150,7 @@ class LoggedInBottomSheet extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: CircleAvatar(
-                  child: Text(userName[0].toUpperCase()),
-                  radius: 40,
-                  backgroundColor: Colors.blueGrey[200],
-                ),
+                child: getAvatar(context, userData, userName),
               ),
               Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -136,7 +167,7 @@ class LoggedInBottomSheet extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         primary: Colors.teal,
                       ),
-                      onPressed: () => log("tried to change avatar"),
+                      onPressed: () => _setNewAvatar(context, userData),
                     )
                   ],
                 ),
