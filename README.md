@@ -1,16 +1,13 @@
 # hello_me
 
-A new Flutter application.
+## HW 3 - Dry part
 
-## Getting Started
+### Q1
+`SnappingSheetController` is the controller class of `SnappingSheet`. it allows you to control the snapping - snap into a different position. stop the current snapping, and check the current snapping.
 
-This project is a starting point for a Flutter application.
+### Q2
+the `snappingPositions` allows you to provide a `SnappingPosition` object with a specific `snappingCurve, snaapingDuration`, and an initial position. Together those allow you to define a movement starting at some point on the screen and moving for a predefined duration, creating an animation.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
-
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Q3
+An advantage of InkWell over GestureDetector is it's support of the material design ripple effect on tap.
+An advantage of GestureDetector over InkWell is it's support in a large variety of gesture events, which offers better control over different gestures such as dragging.
