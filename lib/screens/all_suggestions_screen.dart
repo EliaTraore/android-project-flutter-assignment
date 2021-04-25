@@ -74,7 +74,7 @@ class _AllSuggestionsScreenState extends State<AllSuggestionsScreen> {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: CircleAvatar(
-                  child: Text(userName[0]),
+                  child: Text(userName[0].toUpperCase()),
                   radius: 40,
                   backgroundColor: Colors.blueGrey[200],
                 ),
