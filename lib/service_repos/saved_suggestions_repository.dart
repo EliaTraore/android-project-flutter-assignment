@@ -63,7 +63,7 @@ class SavedSuggestionsRepository with ChangeNotifier {
           .collection('users')
           .doc(_authRepo.user?.uid)
           .get()
-          .then((snapshot) => Set<String>.from(snapshot.data()?.values.first))
+          .then((snapshot) => Set<String>.from(snapshot.get(_savedDBField)))
           .catchError((err) => Set<String>());
     }
     return _saved;
