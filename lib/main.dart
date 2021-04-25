@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:hello_me/service_repos/saved_suggestions_repository.dart';
 import 'package:hello_me/service_repos/auth_repository.dart';
+import 'package:hello_me/service_repos/user_general_db_repository.dart';
+import 'package:hello_me/service_repos/saved_suggestions_repository.dart';
 import 'package:hello_me/screens/all_suggestions_screen.dart';
 
 void main() {
@@ -36,21 +37,29 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => AuthRepository.instance(),
-      child: Consumer<AuthRepository>(builder: (context, auth, _) {
-        return ChangeNotifierProxyProvider<AuthRepository,
-            SavedSuggestionsRepository>(
-          create: (_) => SavedSuggestionsRepository(
-              Provider.of<AuthRepository>(context, listen: false)),
-          update: (_, currAuth, currSaved) =>
-              currSaved?.updateAuth(currAuth) ??
-              SavedSuggestionsRepository(currAuth),
-          child: MaterialApp(
-              title: 'Welcome to Flutter',
-              theme: ThemeData(primaryColor: Colors.red),
-              home: AllSuggestionsScreen()),
-        );
-      }),
-    );
+        create: (_) => AuthRepository.instance(),
+        child: Consumer<AuthRepository>(builder: (context, auth, _) {
+          return MultiProvider(
+              providers: [
+                ChangeNotifierProxyProvider<AuthRepository,
+                        SavedSuggestionsRepository>(
+                    create: (_) => SavedSuggestionsRepository(
+                        Provider.of<AuthRepository>(context, listen: false)),
+                    update: (_, currAuth, currSaved) =>
+                        currSaved?.updateAuth(currAuth) ??
+                        SavedSuggestionsRepository(currAuth)),
+                ChangeNotifierProxyProvider<AuthRepository,
+                        UserGeneralDataRepository>(
+                    create: (_) => UserGeneralDataRepository(
+                        Provider.of<AuthRepository>(context, listen: false)),
+                    update: (_, currAuth, currUserData) =>
+                        currUserData?.updateAuth(currAuth) ??
+                        UserGeneralDataRepository(currAuth)),
+              ],
+              child: MaterialApp(
+                  title: 'Welcome to Flutter',
+                  theme: ThemeData(primaryColor: Colors.red),
+                  home: AllSuggestionsScreen()));
+        }));
   }
 }

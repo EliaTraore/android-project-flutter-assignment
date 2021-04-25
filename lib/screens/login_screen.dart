@@ -3,17 +3,16 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hello_me/service_repos/auth_repository.dart';
+import 'package:hello_me/service_repos/user_general_db_repository.dart';
 
 class LoginScreen extends StatelessWidget {
-  void _handleSignUp(
-      String email, String pwd, String pwdVerify, AuthRepository auth) {
-    //todo: implement
-    log("tried to sign up");
-  }
-
-  void _showSignUpInterface(BuildContext context, TextEditingController email,
-      TextEditingController pwd, AuthRepository auth) {
-    final TextEditingController verifyController = TextEditingController();
+  void _showSignUpInterface(
+      BuildContext context,
+      TextEditingController emailController,
+      TextEditingController pwdController,
+      AuthRepository auth,
+      UserGeneralDataRepository userData) {
+    final TextEditingController verifyPwdController = TextEditingController();
     showModalBottomSheet(
         context: context,
         builder: (context) {
@@ -28,22 +27,34 @@ class LoginScreen extends StatelessWidget {
                 Divider(),
                 TextFormField(
                   decoration: InputDecoration(labelText: "Password"),
-                  controller: verifyController,
+                  controller: verifyPwdController,
                 ),
                 ElevatedButton(
                     child: Text("Confirm"),
-                    onPressed: () => _handleSignUp(
-                        email.text, pwd.text, verifyController.text, auth),
-                    style: ElevatedButton.styleFrom(
-                      primary: Colors.teal,
-                    ))
+                    style: ElevatedButton.styleFrom(primary: Colors.teal),
+                    onPressed: () async {
+                      if (pwdController.text == verifyPwdController.text) {
+                        final success = await auth.signUp(
+                            emailController.text, pwdController.text);
+                        if (success) {
+                          userData.createDbEntry();
+                        }
+                        Navigator.of(context).pop();
+                      } else {
+                        log("failed verification");
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("Passwords must match")));
+                      }
+                      Navigator.of(context).pop();
+                    })
               ],
             ),
           );
         });
   }
 
-  Widget _build(BuildContext context, AuthRepository auth) {
+  Widget _build(BuildContext context, AuthRepository auth,
+      UserGeneralDataRepository userData) {
     final TextEditingController emailController = TextEditingController();
     final TextEditingController pwdController = TextEditingController();
 
@@ -81,7 +92,7 @@ class LoginScreen extends StatelessWidget {
       ElevatedButton(
           child: Text("New user? Click to sign up"),
           onPressed: () => _showSignUpInterface(
-              context, emailController, pwdController, auth),
+              context, emailController, pwdController, auth, userData),
           style: ElevatedButton.styleFrom(
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -101,7 +112,8 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthRepository>(
-        builder: (context, auth, _) => _build(context, auth));
+    return Consumer2<AuthRepository, UserGeneralDataRepository>(
+        builder: (context, auth, userData, _) =>
+            _build(context, auth, userData));
   }
 }
